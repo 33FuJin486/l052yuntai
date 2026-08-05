@@ -71,7 +71,7 @@ jobs:
         shell: pwsh
         run: choco install innosetup --yes --no-progress
 
-            - name: 生成一键安装程序
+      - name: 生成一键安装程序
         shell: pwsh
         run: |
           $ProgressPreference = "SilentlyContinue"
@@ -118,7 +118,6 @@ jobs:
           if (-not (Test-Path $iscc)) {
             throw "未找到 Inno Setup 编译器：$iscc"
           }
-
           & $iscc "installer.iss"
           if ($LASTEXITCODE -ne 0) {
             throw "Inno Setup 构建失败，退出码：$LASTEXITCODE"
