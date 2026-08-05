@@ -158,14 +158,14 @@ class MainWindow(QMainWindow):
 
         metrics = QGridLayout()
         metrics.setHorizontalSpacing(8)
-        self.target_value = self._metric_card("目标状态", "等待识别")
-        self.class_value = self._metric_card("类别 / 置信度", "—")
-        self.error_value = self._metric_card("中心误差 X / Y", "— / —")
-        self.fps_value = self._metric_card("FPS / 检测数", "0.0 / 0")
-        metrics.addWidget(self.target_value.parentWidget(), 0, 0)
-        metrics.addWidget(self.class_value.parentWidget(), 0, 1)
-        metrics.addWidget(self.error_value.parentWidget(), 0, 2)
-        metrics.addWidget(self.fps_value.parentWidget(), 0, 3)
+        self.target_card, self.target_value = self._metric_card("目标状态", "等待识别")
+        self.class_card, self.class_value = self._metric_card("类别 / 置信度", "—")
+        self.error_card, self.error_value = self._metric_card("中心误差 X / Y", "— / —")
+        self.fps_card, self.fps_value = self._metric_card("FPS / 检测数", "0.0 / 0")
+        metrics.addWidget(self.target_card, 0, 0)
+        metrics.addWidget(self.class_card, 0, 1)
+        metrics.addWidget(self.error_card, 0, 2)
+        metrics.addWidget(self.fps_card, 0, 3)
         layout.addLayout(metrics)
         return panel
 
@@ -698,7 +698,7 @@ class MainWindow(QMainWindow):
         label.style().polish(label)
 
     @staticmethod
-    def _metric_card(title: str, initial: str) -> QLabel:
+    def _metric_card(title: str, initial: str) -> tuple[QFrame, QLabel]:
         card = QFrame()
         card.setObjectName("metricCard")
         layout = QVBoxLayout(card)
@@ -710,7 +710,7 @@ class MainWindow(QMainWindow):
         value.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(title_label)
         layout.addWidget(value)
-        return value
+        return card, value
 
     @Slot(str)
     def log(self, message: str, error: bool = False) -> None:
