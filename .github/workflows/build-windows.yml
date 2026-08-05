@@ -74,6 +74,11 @@ jobs:
       - name: 生成一键安装程序
         shell: pwsh
         run: |
+         
+          $ProgressPreference = "SilentlyContinue"
+          Invoke-WebRequest `
+            -Uri "https://raw.githubusercontent.com/jrsoftware/issrc/refs/heads/main/Files/Languages/ChineseSimplified.isl" `
+            -OutFile "ChineseSimplified.isl"
           @'
           [Setup]
           AppId={{B2E5E4ED-A2E5-4E51-A675-8C42FA94D6A9}
