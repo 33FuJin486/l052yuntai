@@ -1,0 +1,141 @@
+name: 构建 Windows 安装程序
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    name: Windows CPU 版
+    runs-on: windows-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: 获取源码
+        uses: actions/checkout@v7
+
+      - name: 安装 Python 3.10
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: 安装 CPU 版依赖
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements.txt
+
+      - name: 运行自动化测试
+        shell: pwsh
+        run: python -m unittest discover -s tests -v
+
+      - name: 使用 PyInstaller 构建软件
+        shell: pwsh
+        run: python -m PyInstaller "云台视觉跟踪系统.spec" --clean --noconfirm
+
+      - name: 复制外部模型和配置
+        shell: pwsh
+        run: |
+          $appDir = "dist\云台视觉跟踪系统"
+          New-Item -ItemType Directory -Force "$appDir\model" | Out-Null
+          New-Item -ItemType Directory -Force "$appDir\config" | Out-Null
+          Copy-Item "model\best.pt" "$appDir\model\best.pt" -Force
+          Copy-Item "config\settings.json" "$appDir\config\settings.json" -Force
+          Copy-Item "README.md" "$appDir\README.md" -Force
+
+      - name: 生成免安装便携版
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path "dist\云台视觉跟踪系统" `
+            -DestinationPath "dist\云台视觉跟踪系统-Windows-CPU-便携版.zip" `
+            -CompressionLevel Optimal `
+            -Force
+
+      - name: 安装 Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+
+      - name: 生成一键安装程序
+        shell: pwsh
+        run: |
+          @'
+          [Setup]
+          AppId={{B2E5E4ED-A2E5-4E51-A675-8C42FA94D6A9}
+          AppName=云台视觉跟踪系统
+          AppVersion=1.0.0
+          AppPublisher=YOLO Vision
+          DefaultDirName={autopf}\云台视觉跟踪系统
+          DefaultGroupName=云台视觉跟踪系统
+          OutputDir=dist\installer
+          OutputBaseFilename=云台视觉跟踪系统-Setup-CPU
+          Compression=lzma2
+          SolidCompression=yes
+          WizardStyle=modern
+          ArchitecturesAllowed=x64compatible
+          ArchitecturesInstallIn64BitMode=x64compatible
+          PrivilegesRequired=admin
+          UninstallDisplayIcon={app}\云台视觉跟踪系统.exe
+
+          [Languages]
+          Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+
+          [Tasks]
+          Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加任务："
+
+          [Files]
+          Source: "dist\云台视觉跟踪系统\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+          [Icons]
+          Name: "{autoprograms}\云台视觉跟踪系统"; Filename: "{app}\云台视觉跟踪系统.exe"
+          Name: "{autodesktop}\云台视觉跟踪系统"; Filename: "{app}\云台视觉跟踪系统.exe"; Tasks: desktopicon
+
+          [Run]
+          Filename: "{app}\云台视觉跟踪系统.exe"; Description: "启动云台视觉跟踪系统"; Flags: nowait postinstall skipifsilent
+          '@ | Set-Content -Path "installer.iss" -Encoding UTF8
+
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            throw "未找到 Inno Setup 编译器：$iscc"
+          }
+          & $iscc "installer.iss"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup 构建失败，退出码：$LASTEXITCODE"
+          }
+
+      - name: 上传可下载成品
+        uses: actions/upload-artifact@v7
+        with:
+          name: 云台视觉跟踪系统-Windows-CPU
+          path: |
+            dist/installer/云台视觉跟踪系统-Setup-CPU.exe
+            dist/云台视觉跟踪系统-Windows-CPU-便携版.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: 标签构建时发布 GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            "dist\installer\云台视觉跟踪系统-Setup-CPU.exe" `
+            "dist\云台视觉跟踪系统-Windows-CPU-便携版.zip" `
+            --title "云台视觉跟踪系统 ${{ github.ref_name }}" `
+            --generate-notes
