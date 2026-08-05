@@ -1,0 +1,9 @@
+# Python 3.10.x；最终发布前应在 Windows 构建机执行 pip freeze 固定完整版本。
+PySide6>=6.8,<7
+ultralytics==8.4.103
+opencv-python>=4.10,<5
+pyserial==3.5
+torch>=2.4,<3
+torchvision>=0.19,<1
+numpy>=1.26,<3
+pyinstaller>=6.10,<7

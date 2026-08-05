@@ -1,0 +1,14 @@
+{
+  "serial_port": "",
+  "baudrate": 115200,
+  "camera_index": 0,
+  "frame_width": 640,
+  "frame_height": 480,
+  "model_path": "model/best.pt",
+  "confidence": 0.5,
+  "inference_size": 640,
+  "target_classes": [
+    0
+  ],
+  "send_frequency": 30
+}
