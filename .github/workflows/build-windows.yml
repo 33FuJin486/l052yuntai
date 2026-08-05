@@ -71,14 +71,14 @@ jobs:
         shell: pwsh
         run: choco install innosetup --yes --no-progress
 
-      - name: 生成一键安装程序
+            - name: 生成一键安装程序
         shell: pwsh
         run: |
-         
           $ProgressPreference = "SilentlyContinue"
           Invoke-WebRequest `
             -Uri "https://raw.githubusercontent.com/jrsoftware/issrc/refs/heads/main/Files/Languages/ChineseSimplified.isl" `
             -OutFile "ChineseSimplified.isl"
+
           @'
           [Setup]
           AppId={{B2E5E4ED-A2E5-4E51-A675-8C42FA94D6A9}
@@ -98,7 +98,7 @@ jobs:
           UninstallDisplayIcon={app}\云台视觉跟踪系统.exe
 
           [Languages]
-          Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+          Name: "chinesesimp"; MessagesFile: "ChineseSimplified.isl"
 
           [Tasks]
           Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加任务："
@@ -118,6 +118,7 @@ jobs:
           if (-not (Test-Path $iscc)) {
             throw "未找到 Inno Setup 编译器：$iscc"
           }
+
           & $iscc "installer.iss"
           if ($LASTEXITCODE -ne 0) {
             throw "Inno Setup 构建失败，退出码：$LASTEXITCODE"
